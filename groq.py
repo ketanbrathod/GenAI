@@ -1,25 +1,13 @@
-# pip install streamlit
-# pip install PyPDF2
-# pip install langchain
-# pip install langchain-community
-# pip install langchain-groq
-# pip install sentence-transformers
-# pip install faiss-cpu
-# pip install python-dotenv
-
+import os
 import streamlit as st
 from PyPDF2 import PdfReader
+from dotenv import load_dotenv
 
-from langchain.text_splitter import RecursiveCharacterTextSplitter
+from langchain_text_splitters import RecursiveCharacterTextSplitter
 from langchain_community.embeddings import HuggingFaceEmbeddings
 from langchain_community.vectorstores import FAISS
-
-from langchain.chains.question_answering import load_qa_chain
-
+from langchain_classic.chains.question_answering import load_qa_chain
 from langchain_groq import ChatGroq
-
-from dotenv import load_dotenv
-import os
 
 # Load .env
 load_dotenv()
@@ -51,7 +39,9 @@ if file is not None:
     text = ""
 
     for page in pdf_reader.pages:
-        text += page.extract_text()
+        extracted = page.extract_text()
+        if extracted:
+            text += extracted
 
     # Split Text
     text_splitter = RecursiveCharacterTextSplitter(
@@ -79,23 +69,24 @@ if file is not None:
         # Similarity Search
         match = vector_store.similarity_search(user_question)
 
-        # Changed
         llm = ChatGroq(
             groq_api_key=GROQ_API_KEY,
             model_name=GROQ_MODEL,
             temperature=0.1
         )
 
-        # QA Chain
+        # QA Chain (uses standard default prompt built into load_qa_chain)
         chain = load_qa_chain(
             llm,
             chain_type="stuff"
         )
 
         # Response
-        response = chain.run(
-            input_documents=match,
-            question=user_question
+        response = chain.invoke(
+            {
+                "input_documents": match,
+                "question": user_question
+            }
         )
 
-        st.write(response)
+        st.write(response["output_text"])
