@@ -1,0 +1,33 @@
+from langchain_together import ChatTogether
+from langchain.tools import tool
+from langchain.agents import initialize_agent, AgentType
+from datetime import datetime
+
+# Tool 1
+@tool
+def calculator(expression: str):
+    """Useful for solving math problems."""
+    return str(eval(expression))
+
+@tool
+def current_time(time:str):
+    """useful for giving current date & time"""
+    return datetime.now()
+
+# LLM
+llm = ChatTogether(
+    model="meta-llama/Llama-3.3-70B-Instruct-Turbo",
+    api_key="Your_Key"
+)
+
+# Agent
+agent = initialize_agent(
+    tools=[calculator,current_time],
+    llm=llm,
+    agent=AgentType.ZERO_SHOT_REACT_DESCRIPTION
+       
+)
+
+# Run
+response = agent.invoke("What is current date & time")
+print(response)
