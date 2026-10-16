@@ -1,0 +1,20 @@
+
+import os
+from fastapi import FastAPI
+from pydantic import BaseModel
+from langchain_groq import ChatGroq
+
+app = FastAPI()
+
+llm = ChatGroq(
+    model="openai/gpt-oss-120b",
+    api_key=os.environ["GROQ_API_KEY"]
+)
+
+class Question(BaseModel):
+    question: str
+
+@app.post("/ask")
+def ask_llm(data: Question):
+    response = llm.invoke(data.question)
+    return {"answer": response.content}
