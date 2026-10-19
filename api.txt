@@ -1,0 +1,28 @@
+import os
+from fastapi import FastAPI, UploadFile, File, Form
+from PyPDF2 import PdfReader
+from langchain_together import ChatTogether
+from dotenv import load_dotenv
+
+load_dotenv()
+app = FastAPI()
+
+@app.post("/ask")
+def ask_pdf(file: UploadFile = File(...), question: str = Form(...)):
+    text = "".join(page.extract_text() or "" for page in PdfReader(file.file).pages)
+
+    llm = ChatTogether(
+        model="meta-llama/Llama-3.3-70B-Instruct-Turbo",
+        api_key=os.getenv("TOGETHER_API_KEY")
+    )
+
+    prompt = f"""
+    Answer politely in bullet points using this PDF.
+    If the answer is missing, say:
+    The content is not available in the PDF - Out of Syllabus
+
+    PDF: {text}
+    Question: {question}
+    """
+
+    return {"answer": llm.invoke(prompt).content}
